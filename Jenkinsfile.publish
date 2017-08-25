@@ -2,7 +2,7 @@
 
 @Library('cliqz-shared-library@vagrant') _
 
-node('ios-osx') {
+node('mac-vm-host') {
 
     writeFile file: 'Vagrantfile', text: '''
       Vagrant.configure("2") do |config|
