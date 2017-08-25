@@ -35,17 +35,49 @@ node('mac-vm-host') {
         false, // rebuild image
     ) { nodeId ->
         node(nodeId) {
-            stage("Checkout") {
+            stage('Checkout') {
                 checkout([
                     $class: 'GitSCM',
                     branches: scm.branches,
                     extensions: scm.extensions + [
                         [$class: 'CheckoutOption', timeout: 30],
-                        [$class: 'CloneOption', depth: 0, noTags: true, reference: '', shallow: false, timeout: 30, honorRefspec: true],
+                        [$class: 'CloneOption', depth: 0, noTags: true, reference: '', shallow: true, timeout: 30, honorRefspec: true],
                     ],
                     userRemoteConfigs: scm.userRemoteConfigs
                 ])
             }
+
+            stage('Prepare') {
+                sh '''#!/bin/bash -l -x
+                    rvm use ruby-2.4.0
+                    gem install xcpretty -N
+                    gem install cocoapods
+                    brew update
+                    brew install xctool
+                    brew install carthage
+                    brew install yarn
+                    pod --version
+                '''
+                // load/restore carthage build directory
+                sh '''#!/bin/bash -l -x
+                    CART_CACHE=/tmp/carthage_cache_`md5 -q Cartfile`.tar; tar -xf $CART_CACHE ; echo A |./bootstrap.sh && tar -cf $CART_CACHE Carthage Cartfile.resolved
+                '''
+                sh '''#!/bin/bash -l -x
+                    yarn install
+                    pod install
+                    npm run dev-bundle
+                '''
+            }
+
+            stage('Build') {
+                timeout(20) {
+                    sh '''#!/bin/bash -l -x
+                        rvm use ruby-2.4.0
+                        xcodebuild -workspace Client.xcworkspace -scheme "Fennec" -sdk iphonesimulator ONLY_ACTIVE_ARCH=NO -derivedDataPath clean build
+                    '''
+                }
+            }
+}
         }
     }
 
