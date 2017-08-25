@@ -27,8 +27,8 @@ node('mac-vm-host') {
     '''
 
     vagrant.inside(
-        "artifacts/${VAGRANTFILE}",
-        "/jenkins",
+        'Vagrantfile',
+        '/jenkins',
         4, // CPU
         4000, // MEMOERY
         12000, // VNC port
